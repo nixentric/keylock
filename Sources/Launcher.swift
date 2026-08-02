@@ -18,6 +18,7 @@ final class Launcher: NSObject, NSWindowDelegate {
     private let startButton = NSButton()
     private var poll: Timer?
     private var lastTrusted: Bool?
+    private var prompted = false
     private let onStart: (Int) -> Void
 
     init(onStart: @escaping (Int) -> Void) {
@@ -152,9 +153,13 @@ final class Launcher: NSObject, NSWindowDelegate {
     }
 
     @objc private func openAccessibilitySettings() {
-        // Registers KeyLock in the Accessibility list so there is a switch to flip.
-        _ = AXIsProcessTrustedWithOptions(
-            [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)
+        // Every call raises another panel, and they stack: close one and the next is waiting.
+        // One per run is all it takes — it exists to put KeyLock in the list, nothing more.
+        if !prompted, !AXIsProcessTrusted() {
+            prompted = true
+            _ = AXIsProcessTrustedWithOptions(
+                [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)
+        }
         NSWorkspace.shared.open(URL(string:
             "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
 
