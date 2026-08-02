@@ -43,9 +43,10 @@ disk image.
 | -------------------------- | --------------------------------------------------- |
 | `Sources/main.swift`       | Entry point and `--selftest` branch                  |
 | `Sources/Launcher.swift`   | Launcher window: duration picker, permission gate    |
-| `Sources/DialView.swift`   | The circular dial: ring, editable readout, drag maths|
+| `Sources/DialView.swift`   | The launcher dial: editable readout, drag maths      |
+| `Sources/Ring.swift`       | Shared ring drawing and the lock screen countdown    |
 | `Sources/EventTap.swift`   | The lock itself, a `CGEventTap` eating key events    |
-| `Sources/LockScreen.swift` | Black overlays, countdown, hold-to-unlock button     |
+| `Sources/LockScreen.swift` | Black overlays, countdown ring, hold-to-unlock       |
 | `Sources/UpdateCheck.swift`| Latest GitHub release vs this build                  |
 | `Sources/AppDelegate.swift`| Wires the above together, kiosk clamp while locked   |
 | `Sources/SelfTest.swift`   | Assertions run on every build                        |
@@ -63,7 +64,8 @@ Open KeyLock and the launcher appears: drag around the dial to set how long to
 lock for (1–120 minutes, remembered for next time), or click the `00:05:00`
 readout and type it — `25`, `0:45` and `01:30:00` all work. Then press
 **Start lock**. The screen goes dark, the
-keyboard goes dead, and the remaining time is shown on screen.
+keyboard goes dead, and a countdown ring drains on every display until the time
+is up.
 
 Nothing is locked until you press Start, so the launcher is the last screen where
 your keyboard still works.

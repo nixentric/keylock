@@ -20,6 +20,10 @@ func runSelfTest() {
     assert(minutesForAngle(-90) == 90 && minutesForAngle(359) == 120) // wraps, and clamps at max
     assert(minutesForAngle(75) == 25)                                 // 3 degrees per minute
 
+    assert(clockText(0) == "00:00" && clockText(59) == "00:59")
+    assert(clockText(90) == "01:30" && clockText(3599) == "59:59")
+    assert(clockText(3675) == "1:01:15" && clockText(-5) == "00:00")
+
     assert(minutesFromTimeText("00:25:00") == 25 && minutesFromTimeText("25") == 25)
     assert(minutesFromTimeText("1:30:00") == 90 && minutesFromTimeText("0:45") == 45)
     assert(minutesFromTimeText("00:00:45") == 1)     // seconds round up to a whole minute

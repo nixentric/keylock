@@ -28,13 +28,16 @@ final class Overlay: NSWindow {
 
 final class LockScreen {
     private var windows: [NSWindow] = []
+    private var rings: [CountdownRing] = []
     private var labels: [NSTextField] = []
     private var timer: Timer?
+    private let total: Int
     private var remaining: Int
     private var note = ""
     private let onUnlock: () -> Void
 
     init(seconds: Int, onUnlock: @escaping () -> Void) {
+        total = seconds
         remaining = seconds
         self.onUnlock = onUnlock
     }
@@ -54,13 +57,13 @@ final class LockScreen {
             // that segfaults the next deactivate notification.
             w.isReleasedWhenClosed = false
 
-            let title = NSTextField(labelWithString: "⌨️  Keyboard locked")
-            title.font = .systemFont(ofSize: 44, weight: .semibold)
-            title.textColor = .white
+            let ring = CountdownRing(diameter: 300, seconds: total)
+            ring.update(remaining: remaining)
+            rings.append(ring)
 
             let label = NSTextField(labelWithString: "")
-            label.font = .monospacedDigitSystemFont(ofSize: 17, weight: .regular)
-            label.textColor = .white.withAlphaComponent(0.7)
+            label.font = .systemFont(ofSize: 14)
+            label.textColor = .white.withAlphaComponent(0.55)
             label.alignment = .center
             label.maximumNumberOfLines = 0
             labels.append(label)
@@ -71,9 +74,10 @@ final class LockScreen {
             button.font = .systemFont(ofSize: 17)
             button.onHold = { [weak self] in self?.unlock() }
 
-            let stack = NSStackView(views: [title, label, button])
+            let stack = NSStackView(views: [ring, button, label])
             stack.orientation = .vertical
-            stack.spacing = 24
+            stack.spacing = 28
+            stack.setCustomSpacing(18, after: button)
             stack.alignment = .centerX
             stack.translatesAutoresizingMaskIntoConstraints = false
             let content = w.contentView!
@@ -108,9 +112,8 @@ final class LockScreen {
     }
 
     private func updateLabels() {
-        let text = String(format: "Hold the button 1.5s, or auto-unlock in %d:%02d",
-                          remaining / 60, remaining % 60)
-        labels.forEach { $0.stringValue = text + note }
+        rings.forEach { $0.update(remaining: remaining) }
+        labels.forEach { $0.stringValue = "Hold the button for 1.5 seconds to unlock" + note }
     }
 
     private func unlock() {

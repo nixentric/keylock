@@ -106,32 +106,8 @@ final class DialView: NSView, NSTextFieldDelegate {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let center = NSPoint(x: bounds.midX, y: bounds.midY)
-        let radius = min(bounds.width, bounds.height) / 2 - ring / 2 - 2
-
-        let track = NSBezierPath()
-        track.appendArc(withCenter: center, radius: radius, startAngle: 0, endAngle: 360)
-        track.lineWidth = ring
-        NSColor.separatorColor.setStroke()
-        track.stroke()
-
-        // Progress runs clockwise from twelve o'clock, same direction the clock reads.
-        let fraction = CGFloat(minutes) / CGFloat(maxMinutes)
-        let endAngle = 90 - 360 * fraction
-        let progress = NSBezierPath()
-        progress.appendArc(withCenter: center, radius: radius, startAngle: 90,
-                           endAngle: endAngle, clockwise: true)
-        progress.lineWidth = ring
-        progress.lineCapStyle = .round
-        NSColor.controlAccentColor.setStroke()
-        progress.stroke()
-
-        let radians = endAngle * .pi / 180
-        let knob = NSPoint(x: center.x + cos(radians) * radius,
-                           y: center.y + sin(radians) * radius)
-        NSColor.controlAccentColor.setFill()
-        NSBezierPath(ovalIn: NSRect(x: knob.x - ring, y: knob.y - ring,
-                                    width: ring * 2, height: ring * 2)).fill()
+        drawRing(in: bounds, fraction: CGFloat(minutes) / CGFloat(maxMinutes), lineWidth: ring,
+                 track: .separatorColor, progress: .controlAccentColor, showKnob: true)
     }
 
     override func mouseDown(with event: NSEvent) { setFromDrag(event) }
