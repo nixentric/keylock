@@ -7,8 +7,14 @@ typing nonsense into whatever is open. The mouse and trackpad stay live — that
 is the only way back out.
 
 macOS has no built-in way to do this. KeyLock installs a `CGEventTap` that
-swallows every `keyDown`, `keyUp`, and `flagsChanged` event. One Swift file, no
-dependencies, no Homebrew, no background daemon — the tap dies with the process.
+swallows every `keyDown`, `keyUp`, and `flagsChanged` event. Plain Swift and
+AppKit, no dependencies, no Homebrew, no background daemon — the tap dies with
+the process.
+
+<p align="center">
+  <img src="screenshot.png" width="420"
+       alt="KeyLock launcher: the dial set to 10 minutes, with a Start lock button">
+</p>
 
 ## Install
 
