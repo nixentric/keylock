@@ -74,6 +74,8 @@ final class Overlay: NSWindow {
 final class App: NSObject, NSApplicationDelegate {
     var tap: CFMachPort?
     var windows: [NSWindow] = []
+    var setupWindow: NSWindow?
+    var locked = false
     var labels: [NSTextField] = []
     var remaining = parseSeconds(CommandLine.arguments)
     var note = ""
@@ -140,16 +142,19 @@ final class App: NSObject, NSApplicationDelegate {
         w.title = "KeyLock"
         w.contentView = stack
         w.center()
+        // NSWindow created in code frees itself on close, which leaves ARC holding a dead
+        // pointer. Closing this window then crashed the next deactivate notification.
+        w.isReleasedWhenClosed = false
         w.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        windows.append(w)
+        setupWindow = w
 
         Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] t in
             guard AXIsProcessTrusted(), let self else { return }
             t.invalidate()
             status.stringValue = "Permission granted — locking…"
-            self.windows.forEach { $0.close() }
-            self.windows.removeAll()
+            self.setupWindow?.close()
+            self.setupWindow = nil
             self.startLock()
         }
     }
@@ -214,6 +219,7 @@ final class App: NSObject, NSApplicationDelegate {
             w.isOpaque = false
             w.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
             w.setFrame(screen.frame, display: true)
+            w.isReleasedWhenClosed = false
 
             let title = NSTextField(labelWithString: "⌨️  Keyboard locked")
             title.font = .systemFont(ofSize: 44, weight: .semibold)
@@ -247,17 +253,21 @@ final class App: NSObject, NSApplicationDelegate {
             windows.append(w)
         }
         windows.first?.makeKeyAndOrderFront(nil)
+        locked = true
         NSApp.activate(ignoringOtherApps: true)
+        NSApp.presentationOptions = [.hideDock, .hideMenuBar, .disableProcessSwitching]
         updateLabel()
     }
 
+    // Both handlers only apply while locked. Running them on the setup screen fought with
+    // System Settings for focus and flickered the menu bar in and out.
     func applicationDidBecomeActive(_ note: Notification) {
-        // Kiosk mode: the mouse is still live, so without this you can click your way out.
+        guard locked else { return }
         NSApp.presentationOptions = [.hideDock, .hideMenuBar, .disableProcessSwitching]
     }
 
     func applicationDidResignActive(_ note: Notification) {
-        guard !windows.isEmpty else { return }
+        guard locked else { return }
         NSApp.activate(ignoringOtherApps: true)
         windows.forEach { $0.orderFrontRegardless() }
     }
@@ -274,6 +284,7 @@ final class App: NSObject, NSApplicationDelegate {
     }
 
     func unlock() {
+        locked = false
         windows.forEach { $0.orderOut(nil) }
         windows.removeAll()
         NSApp.presentationOptions = []
