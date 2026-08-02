@@ -3,12 +3,12 @@
 # attaches to KeyLock itself instead of whatever terminal launched it.
 set -e
 cd "$(dirname "$0")"
-VERSION=1.0.1          # bump this, then tag the GitHub release v$VERSION
+VERSION=1.1.0          # bump this, then tag the GitHub release v$VERSION
 REPO="nixentric/keylock" # "owner/keylock" — leave empty to switch the update check off
 APP=KeyLock.app
 rm -rf "$APP" build
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-swiftc -O keylock.swift -o "$APP/Contents/MacOS/KeyLock"
+swiftc -O Sources/*.swift -o "$APP/Contents/MacOS/KeyLock"
 
 # Icon from logo.png. Composited with AppKit, not sips: the source is 1120x1194 and
 # sips can only pad with an opaque colour, which turns the transparent corners black.
@@ -36,6 +36,7 @@ SWIFT
       --out "build/AppIcon.iconset/icon_${s}x${s}@2x.png" >/dev/null
   done
   iconutil -c icns build/AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns"
+  cp logo.png "$APP/Contents/Resources/"  # the launcher shows it too
 fi
 
 cat > "$APP/Contents/Info.plist" <<PLIST
