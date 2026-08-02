@@ -43,7 +43,7 @@ disk image.
 | -------------------------- | --------------------------------------------------- |
 | `Sources/main.swift`       | Entry point and `--selftest` branch                  |
 | `Sources/Launcher.swift`   | Launcher window: duration picker, permission gate    |
-| `Sources/DialView.swift`   | The circular dial: ring, readout, drag maths         |
+| `Sources/DialView.swift`   | The circular dial: ring, editable readout, drag maths|
 | `Sources/EventTap.swift`   | The lock itself, a `CGEventTap` eating key events    |
 | `Sources/LockScreen.swift` | Black overlays, countdown, hold-to-unlock button     |
 | `Sources/UpdateCheck.swift`| Latest GitHub release vs this build                  |
@@ -60,8 +60,9 @@ Two variables at the top of [`build.sh`](build.sh) are the ones worth editing:
 ## Use it
 
 Open KeyLock and the launcher appears: drag around the dial to set how long to
-lock for (1–120 minutes, remembered for next time), or press **Custom** inside
-the dial to type an exact number. Then press **Start lock**. The screen goes dark, the
+lock for (1–120 minutes, remembered for next time), or click the `00:05:00`
+readout and type it — `25`, `0:45` and `01:30:00` all work. Then press
+**Start lock**. The screen goes dark, the
 keyboard goes dead, and the remaining time is shown on screen.
 
 Nothing is locked until you press Start, so the launcher is the last screen where

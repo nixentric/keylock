@@ -13,9 +13,6 @@ final class Launcher: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private var stack: NSStackView?
     private var dial: DialView?
-    private var form: NSBox?
-    private let field = NSTextField()
-    private let stepper = NSStepper()
     private let permissionNote = NSTextField(wrappingLabelWithString: "")
     private let permissionButton = NSButton()
     private let startButton = NSButton()
@@ -42,61 +39,9 @@ final class Launcher: NSObject, NSWindowDelegate {
         subtitle.font = .systemFont(ofSize: 13)
         subtitle.textColor = .secondaryLabelColor
 
-        let customButton = NSButton(title: "Custom", target: self, action: #selector(toggleCustom))
-        customButton.bezelStyle = .rounded
-        customButton.image = NSImage(systemSymbolName: "pencil", accessibilityDescription: nil)
-        customButton.imagePosition = .imageLeading
-
-        let dial = DialView(diameter: 234, customButton: customButton)
+        let dial = DialView(diameter: 234)
         dial.minutes = clampMinutes(defaultMinutes)
-        dial.onChange = { [weak self] minutes in
-            self?.field.integerValue = minutes
-            self?.stepper.integerValue = minutes
-        }
         self.dial = dial
-
-        let formatter = NumberFormatter()
-        formatter.minimum = 1
-        formatter.maximum = NSNumber(value: maxMinutes)
-        formatter.allowsFloats = false
-        field.formatter = formatter
-        field.alignment = .right
-        field.font = .monospacedDigitSystemFont(ofSize: 15, weight: .regular)
-        field.integerValue = clampMinutes(defaultMinutes)
-        field.target = self
-        field.action = #selector(fieldChanged)
-        field.widthAnchor.constraint(equalToConstant: 56).isActive = true
-
-        stepper.minValue = 1
-        stepper.maxValue = Double(maxMinutes)
-        stepper.integerValue = field.integerValue
-        stepper.valueWraps = false
-        stepper.target = self
-        stepper.action = #selector(stepperChanged)
-
-        let formLabel = NSTextField(labelWithString: "Lock for")
-        formLabel.font = .systemFont(ofSize: 14)
-        let unitLabel = NSTextField(labelWithString: "minutes")
-        unitLabel.font = .systemFont(ofSize: 14)
-        unitLabel.textColor = .secondaryLabelColor
-        let spacer = NSView()
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-
-        let row = NSStackView(views: [formLabel, spacer, field, stepper, unitLabel])
-        row.orientation = .horizontal
-        row.spacing = 10
-
-        // A card instead of a bare row: same controls, less form-in-a-dialog stiffness.
-        let form = NSBox()
-        form.boxType = .custom
-        form.borderWidth = 0
-        form.cornerRadius = 12
-        form.fillColor = .controlBackgroundColor
-        form.contentViewMargins = NSSize(width: 18, height: 14)
-        form.contentView = row
-        form.widthAnchor.constraint(equalToConstant: launcherWidth - 88).isActive = true
-        form.isHidden = true  // revealed by Custom, for when typing beats dragging
-        self.form = form
 
         startButton.title = "Start lock"
         startButton.bezelStyle = .rounded
@@ -120,7 +65,7 @@ final class Launcher: NSObject, NSWindowDelegate {
         permissionButton.target = self
         permissionButton.action = #selector(openAccessibilitySettings)
 
-        let stack = NSStackView(views: [logo, title, subtitle, dial, form, startButton,
+        let stack = NSStackView(views: [logo, title, subtitle, dial, startButton,
                                         permissionNote, permissionButton])
         stack.orientation = .vertical
         stack.alignment = .centerX
@@ -128,7 +73,6 @@ final class Launcher: NSObject, NSWindowDelegate {
         stack.setCustomSpacing(6, after: title)
         stack.setCustomSpacing(24, after: subtitle)
         stack.setCustomSpacing(20, after: dial)
-        stack.setCustomSpacing(16, after: form)
         stack.setCustomSpacing(28, after: startButton)
         // Top inset clears the traffic lights, since the content runs under the title bar.
         stack.edgeInsets = NSEdgeInsets(top: 46, left: 44, bottom: 40, right: 44)
@@ -187,26 +131,8 @@ final class Launcher: NSObject, NSWindowDelegate {
         window.setContentSize(NSSize(width: launcherWidth, height: stack.fittingSize.height))
     }
 
-    @objc private func fieldChanged() {
-        field.integerValue = clampMinutes(field.integerValue)
-        stepper.integerValue = field.integerValue
-        dial?.minutes = field.integerValue
-    }
-
-    @objc private func stepperChanged() {
-        field.integerValue = stepper.integerValue
-        dial?.minutes = stepper.integerValue
-    }
-
-    @objc private func toggleCustom() {
-        guard let form else { return }
-        form.isHidden.toggle()
-        resizeToFit()
-        if !form.isHidden { window?.makeFirstResponder(field) }
-    }
-
     @objc private func start() {
-        let minutes = dial?.minutes ?? clampMinutes(field.integerValue)
+        let minutes = clampMinutes(dial?.minutes ?? savedMinutes())
         UserDefaults.standard.set(minutes, forKey: minutesKey)
         onStart(minutes * 60)
     }

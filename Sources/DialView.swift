@@ -1,7 +1,7 @@
 import Cocoa
 
-/// Circular duration picker: drag anywhere on the dial to set minutes. AppKit's own circular
-/// slider is a bare knob, so the ring, the readout and the drag maths live here.
+/// Circular duration picker: drag anywhere on the ring, or click the readout and type.
+/// AppKit's own circular slider is a bare knob, so the ring and the drag maths live here.
 
 let maxMinutes = 120
 
@@ -12,7 +12,23 @@ func minutesForAngle(_ degrees: Double) -> Int {
     return clampMinutes(Int((deg / 360 * Double(maxMinutes)).rounded()))
 }
 
-final class DialView: NSView {
+/// Accepts what someone would actually type into the readout: "25", "0:45", "01:30:00".
+/// Returns nil for anything unparseable, so the field can fall back to its old value.
+func minutesFromTimeText(_ text: String) -> Int? {
+    let parts = text.split(separator: ":").map { Int($0.trimmingCharacters(in: .whitespaces)) }
+    guard !parts.isEmpty, parts.count <= 3, !parts.contains(where: { $0 == nil }) else { return nil }
+    let n = parts.map { $0! }
+    let minutes: Int
+    switch n.count {
+    case 1: minutes = n[0]
+    case 2: minutes = n[0] * 60 + n[1]
+    case 3: minutes = n[0] * 60 + n[1] + (n[2] >= 30 ? 1 : 0)  // seconds round to the nearest minute
+    default: return nil
+    }
+    return minutes > 0 ? clampMinutes(minutes) : nil
+}
+
+final class DialView: NSView, NSTextFieldDelegate {
     var onChange: (Int) -> Void = { _ in }
     var minutes: Int = 5 {
         didSet {
@@ -24,10 +40,10 @@ final class DialView: NSView {
     }
 
     private let totalLabel = NSTextField(labelWithString: "")
-    private let timeLabel = NSTextField(labelWithString: "")
+    private let timeField = NSTextField(string: "")
     private let ring: CGFloat = 8
 
-    init(diameter: CGFloat, customButton: NSButton) {
+    init(diameter: CGFloat) {
         super.init(frame: NSRect(x: 0, y: 0, width: diameter, height: diameter))
         translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -37,17 +53,30 @@ final class DialView: NSView {
 
         totalLabel.font = .systemFont(ofSize: 13)
         totalLabel.textColor = .secondaryLabelColor
-        timeLabel.font = .monospacedDigitSystemFont(ofSize: 38, weight: .semibold)
 
-        let stack = NSStackView(views: [totalLabel, timeLabel, customButton])
+        // The readout is the input: click it and type, no separate edit mode.
+        timeField.font = .monospacedDigitSystemFont(ofSize: 38, weight: .semibold)
+        timeField.alignment = .center
+        timeField.isBordered = false
+        timeField.drawsBackground = false
+        timeField.focusRingType = .none
+        timeField.delegate = self
+        timeField.toolTip = "Type a duration, e.g. 25 or 01:30:00"
+
+        let hint = NSTextField(labelWithString: "click to type")
+        hint.font = .systemFont(ofSize: 11)
+        hint.textColor = .tertiaryLabelColor
+
+        let stack = NSStackView(views: [totalLabel, timeField, hint])
         stack.orientation = .vertical
         stack.alignment = .centerX
-        stack.spacing = 10
+        stack.spacing = 6
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
         NSLayoutConstraint.activate([
             stack.centerXAnchor.constraint(equalTo: centerXAnchor),
             stack.centerYAnchor.constraint(equalTo: centerYAnchor),
+            stack.widthAnchor.constraint(equalToConstant: diameter - 60),
         ])
 
         setAccessibilityRole(.slider)
@@ -57,10 +86,23 @@ final class DialView: NSView {
 
     required init?(coder: NSCoder) { fatalError("not used") }
 
+    /// The window is movable by its background, which otherwise turns every drag on the
+    /// dial into a window drag.
+    override var mouseDownCanMoveWindow: Bool { false }
+
     private func updateReadout() {
         totalLabel.stringValue = "Total \(minutes) minute\(minutes == 1 ? "" : "s")"
-        timeLabel.stringValue = String(format: "%02d:%02d:00", minutes / 60, minutes % 60)
+        if timeField.currentEditor() == nil {  // don't fight the text being typed
+            timeField.stringValue = String(format: "%02d:%02d:00", minutes / 60, minutes % 60)
+        }
         setAccessibilityValueDescription(totalLabel.stringValue)
+    }
+
+    func controlTextDidEndEditing(_ note: Notification) {
+        if let typed = minutesFromTimeText(timeField.stringValue) {
+            minutes = typed
+        }
+        updateReadout()  // normalise, or put the old value back when the input made no sense
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -73,7 +115,7 @@ final class DialView: NSView {
         NSColor.separatorColor.setStroke()
         track.stroke()
 
-        // Progress runs clockwise from twelve o'clock, same as the readout counts down.
+        // Progress runs clockwise from twelve o'clock, same direction the clock reads.
         let fraction = CGFloat(minutes) / CGFloat(maxMinutes)
         let endAngle = 90 - 360 * fraction
         let progress = NSBezierPath()
@@ -96,6 +138,7 @@ final class DialView: NSView {
     override func mouseDragged(with event: NSEvent) { setFromDrag(event) }
 
     private func setFromDrag(_ event: NSEvent) {
+        window?.makeFirstResponder(self)  // commit any in-progress typing first
         let p = convert(event.locationInWindow, from: nil)
         // atan2(dx, dy) measures clockwise from twelve o'clock, which is what the dial shows.
         let degrees = atan2(p.x - bounds.midX, p.y - bounds.midY) * 180 / .pi

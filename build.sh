@@ -3,7 +3,7 @@
 # attaches to KeyLock itself instead of whatever terminal launched it.
 set -e
 cd "$(dirname "$0")"
-VERSION=1.2.0          # bump this, then tag the GitHub release v$VERSION
+VERSION=1.2.1          # bump this, then tag the GitHub release v$VERSION
 REPO="nixentric/keylock" # "owner/keylock" — leave empty to switch the update check off
 APP=KeyLock.app
 rm -rf "$APP" build

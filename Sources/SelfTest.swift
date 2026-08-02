@@ -20,6 +20,13 @@ func runSelfTest() {
     assert(minutesForAngle(-90) == 90 && minutesForAngle(359) == 120) // wraps, and clamps at max
     assert(minutesForAngle(75) == 25)                                 // 3 degrees per minute
 
+    assert(minutesFromTimeText("00:25:00") == 25 && minutesFromTimeText("25") == 25)
+    assert(minutesFromTimeText("1:30:00") == 90 && minutesFromTimeText("0:45") == 45)
+    assert(minutesFromTimeText("00:00:45") == 1)     // seconds round up to a whole minute
+    assert(minutesFromTimeText("99:00:00") == 120)   // clamped to the dial's range
+    assert(minutesFromTimeText("00:00:00") == nil && minutesFromTimeText("abc") == nil)
+    assert(minutesFromTimeText("") == nil && minutesFromTimeText("1:2:3:4") == nil)
+
     assert(clampMinutes(0) == 1 && clampMinutes(-5) == 1)
     assert(clampMinutes(999) == 120 && clampMinutes(7) == 7)
     assert((1 ... 120).contains(savedMinutes()))
