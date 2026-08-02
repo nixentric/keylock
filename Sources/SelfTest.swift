@@ -15,6 +15,11 @@ func runSelfTest() {
     assert(parseSeconds(["--seconds"]) == savedMinutes() * 60)
     assert(parseSeconds([]) == savedMinutes() * 60)
 
+    assert(minutesForAngle(0) == 1 && minutesForAngle(360) == 1)      // top clamps up to 1
+    assert(minutesForAngle(90) == 30 && minutesForAngle(180) == 60)   // quarter, half turn
+    assert(minutesForAngle(-90) == 90 && minutesForAngle(359) == 120) // wraps, and clamps at max
+    assert(minutesForAngle(75) == 25)                                 // 3 degrees per minute
+
     assert(clampMinutes(0) == 1 && clampMinutes(-5) == 1)
     assert(clampMinutes(999) == 120 && clampMinutes(7) == 7)
     assert((1 ... 120).contains(savedMinutes()))
