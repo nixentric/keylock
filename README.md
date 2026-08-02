@@ -2,30 +2,31 @@
 
 <img src="logo.png" width="120" align="right" alt="KeyLock">
 
-Kunci keyboard MacBook selama beberapa menit supaya bisa dilap tanpa mengetik hal
-aneh ke mana-mana. Mouse/trackpad tetap hidup — itu satu-satunya jalan membuka kunci.
+Lock your MacBook keyboard for a few minutes so you can wipe it down without
+typing nonsense into whatever is open. The mouse and trackpad stay live — that
+is the only way back out.
 
-macOS tidak punya fitur ini bawaan. KeyLock memakai `CGEventTap` untuk menelan
-semua event `keyDown`, `keyUp`, dan `flagsChanged`. Satu file Swift, tanpa
-dependency, tanpa Homebrew, tanpa background daemon — event tap-nya mati bersama
-prosesnya.
+macOS has no built-in way to do this. KeyLock installs a `CGEventTap` that
+swallows every `keyDown`, `keyUp`, and `flagsChanged` event. One Swift file, no
+dependencies, no Homebrew, no background daemon — the tap dies with the process.
 
 ## Install
 
-**Cara cepat:** unduh `KeyLock.dmg` dari halaman
-[Releases](https://github.com/nixentric/keylock/releases), buka, seret KeyLock ke
-Applications.
+**Quick way:** grab `KeyLock.dmg` from
+[Releases](https://github.com/nixentric/keylock/releases), open it, drag KeyLock
+into Applications.
 
-Build ad-hoc signed, jadi saat pertama dibuka Gatekeeper mungkin menolak. Klik
-kanan ikonnya › **Open** › **Open**, atau:
+The build is ad-hoc signed, so Gatekeeper will block the first launch. Right
+click the icon › **Open** › **Open**, or:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/KeyLock.app
 ```
 
-## Build sendiri
+## Build it yourself
 
-Butuh Xcode Command Line Tools (`xcode-select --install`). Tidak butuh Xcode penuh.
+Needs the Xcode Command Line Tools (`xcode-select --install`). Full Xcode is not
+required.
 
 ```bash
 git clone https://github.com/nixentric/keylock.git
@@ -33,75 +34,75 @@ cd keylock
 ./build.sh
 ```
 
-Hasilnya `KeyLock.app` dan `KeyLock.dmg` di folder yang sama. `build.sh`
-mengerjakan: compile `keylock.swift` dengan `swiftc`, komposit `logo.png` jadi
-`AppIcon.icns`, tulis `Info.plist`, ad-hoc codesign, jalankan self-test, lalu
-bungkus jadi disk image.
+You get `KeyLock.app` and `KeyLock.dmg` in the same folder. `build.sh` compiles
+`keylock.swift` with `swiftc`, composites `logo.png` into `AppIcon.icns`, writes
+`Info.plist`, ad-hoc signs the bundle, runs the self-test, and wraps it all in a
+disk image.
 
-Dua variabel di atas [`build.sh`](build.sh) yang biasanya diubah:
+Two variables at the top of [`build.sh`](build.sh) are the ones worth editing:
 
-| Variabel  | Isinya                                                          |
-| --------- | --------------------------------------------------------------- |
-| `VERSION` | Versi bundle, dipakai untuk membandingkan dengan rilis terbaru    |
-| `REPO`    | `owner/repo` untuk cek update. Kosongkan untuk mematikan cek ini  |
+| Variable  | What it does                                                     |
+| --------- | ---------------------------------------------------------------- |
+| `VERSION` | Bundle version, compared against the latest release tag           |
+| `REPO`    | `owner/repo` for the update check. Leave empty to turn it off     |
 
-## Izin Accessibility
+## Accessibility permission
 
-Memblokir keyboard butuh izin Accessibility. Buka KeyLock pertama kali dan ia
-menampilkan layar pengaktifan: klik **Buka System Settings**, nyalakan sakelar
-KeyLock di Privacy & Security › Accessibility, lalu kembali. Layar kunci jalan
-sendiri begitu izinnya masuk — tidak perlu buka ulang aplikasinya.
+Blocking the keyboard requires Accessibility access. Launch KeyLock and it opens
+a setup screen: click **Open System Settings**, flip the KeyLock switch under
+Privacy & Security › Accessibility, then come back. The lock screen starts on its
+own the moment the permission lands — no relaunch needed.
 
-Izin ini terikat ke salinan aplikasi tertentu. Habis rebuild atau habis
-memindahkan app ke folder lain, sakelarnya perlu dinyalakan ulang.
+The grant is tied to that exact copy of the app. After a rebuild, or after moving
+the app somewhere else, flip the switch again.
 
-## Pakai
+## Use it
 
-Buka KeyLock. Layar menghitam, keyboard mati, dan sisa waktunya tampil di layar.
+Open KeyLock. The screen goes dark, the keyboard goes dead, and the remaining
+time is shown on screen.
 
-**Buka kunci:** tahan tombol *Hold to unlock* selama 1,5 detik. Sengaja tahan,
-bukan klik — supaya lap yang menyenggol trackpad tidak ikut membuka kunci.
-Kalau tidak diapa-apakan, kuncinya lepas sendiri setelah waktunya habis.
+**To unlock:** hold the *Hold to unlock* button for 1.5 seconds. A deliberate
+hold, not a click, so a cloth brushing the trackpad cannot let you out. Leave it
+alone and the lock lifts by itself when the timer runs out.
 
-Durasi default 5 menit. Untuk mengubahnya:
+The default is 5 minutes. To change it:
 
 ```bash
 open -a KeyLock --args --seconds 120
 ```
 
-Selama terkunci, Dock, menu bar, dan pindah aplikasi semuanya mati
-(`NSApplicationPresentationOptions`), jadi jangan set `--seconds` kelewat besar.
+While locked, the Dock, the menu bar, and app switching are all disabled
+(`NSApplicationPresentationOptions`), so do not set `--seconds` absurdly high.
 
-**Yang tidak bisa diblokir:** tombol power, Touch ID, dan force-restart tahan
-power. Itu level hardware, di bawah jangkauan event tap. Jangan menekan area itu
-saat mengelap.
+**What it cannot block:** the power button, Touch ID, and a hold-to-force-restart.
+Those live below the event tap, in hardware. Keep the cloth away from them.
 
-## Cek update
+## Update check
 
-Saat dibuka, KeyLock menanyakan rilis terbaru ke GitHub
-(`/repos/OWNER/REPO/releases/latest`) dan membandingkan `tag_name` dengan versi
-bundle. Kalau ada yang lebih baru, satu baris pemberitahuan muncul di layar
-kunci. Asinkron, jadi tidak menunda penguncian, dan diam saja kalau offline.
-Bukan auto-update — unduhannya tetap manual dari halaman Releases.
+On launch KeyLock asks GitHub for the latest release
+(`/repos/OWNER/REPO/releases/latest`) and compares `tag_name` against the bundle
+version. If something newer exists, one notice line appears on the lock screen.
+It runs asynchronously so it never delays the lock, and stays quiet when offline.
+This is not auto-update — downloading is still a manual trip to Releases.
 
-## Rilis versi baru
+## Cutting a release
 
 ```bash
-gh release create v1.1.0 KeyLock.dmg --title "KeyLock 1.1.0" --notes "Apa yang berubah"
+gh release create v1.1.0 KeyLock.dmg --title "KeyLock 1.1.0" --notes "What changed"
 ```
 
-Naikkan `VERSION` di `build.sh` dulu, jalankan `./build.sh`, baru bikin rilisnya.
-Tag harus cocok dengan `VERSION` supaya pembandingnya benar.
+Bump `VERSION` in `build.sh` first, run `./build.sh`, then cut the release. The
+tag has to match `VERSION` or the comparison is meaningless.
 
-## Test
+## Tests
 
 ```bash
 KeyLock.app/Contents/MacOS/KeyLock --selftest
 ```
 
-Memeriksa event mana yang ditelan, parsing `--seconds`, dan pembanding versi.
-`build.sh` menjalankannya tiap build.
+Covers which events get swallowed, `--seconds` parsing, and version comparison.
+`build.sh` runs it on every build.
 
-## Lisensi
+## License
 
 MIT

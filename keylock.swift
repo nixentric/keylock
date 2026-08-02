@@ -107,23 +107,23 @@ final class App: NSObject, NSApplicationDelegate {
         _ = AXIsProcessTrustedWithOptions(
             [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)
 
-        let title = NSTextField(labelWithString: "Aktifkan Accessibility dulu")
+        let title = NSTextField(labelWithString: "Turn on Accessibility first")
         title.font = .systemFont(ofSize: 22, weight: .semibold)
 
         let body = NSTextField(wrappingLabelWithString: """
-            KeyLock butuh izin Accessibility untuk memblokir tombol keyboard.
+            KeyLock needs Accessibility access to block your keyboard.
 
-            1. Klik tombol di bawah — System Settings terbuka di Privacy & Security › Accessibility.
-            2. Nyalakan sakelar KeyLock (klik gembok dulu kalau masih terkunci).
-            3. Balik ke sini. Layar kunci jalan otomatis begitu izinnya masuk.
+            1. Click the button below — System Settings opens at Privacy & Security › Accessibility.
+            2. Switch KeyLock on (unlock the padlock first if it is closed).
+            3. Come back here. The lock screen starts as soon as the permission lands.
             """)
         body.font = .systemFont(ofSize: 13)
 
-        let status = NSTextField(labelWithString: "Menunggu izin…")
+        let status = NSTextField(labelWithString: "Waiting for permission…")
         status.font = .systemFont(ofSize: 13, weight: .medium)
         status.textColor = .secondaryLabelColor
 
-        let open = NSButton(title: "Buka System Settings", target: self,
+        let open = NSButton(title: "Open System Settings", target: self,
                             action: #selector(openAccessibilitySettings))
         open.bezelStyle = .rounded
         open.controlSize = .large
@@ -147,7 +147,7 @@ final class App: NSObject, NSApplicationDelegate {
         Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] t in
             guard AXIsProcessTrusted(), let self else { return }
             t.invalidate()
-            status.stringValue = "Izin masuk — mengunci keyboard…"
+            status.stringValue = "Permission granted — locking…"
             self.windows.forEach { $0.close() }
             self.windows.removeAll()
             self.startLock()
@@ -180,8 +180,8 @@ final class App: NSObject, NSApplicationDelegate {
             // existing process; a fresh launch does. Retry once, then give up honestly.
             guard !CommandLine.arguments.contains("--relaunched") else {
                 let a = NSAlert()
-                a.messageText = "Tidak bisa mengunci keyboard"
-                a.informativeText = "Event tap ditolak. Cek izin Accessibility untuk KeyLock."
+                a.messageText = "Could not lock the keyboard"
+                a.informativeText = "The event tap was refused. Check Accessibility permission for KeyLock."
                 a.runModal()
                 NSApp.terminate(nil)
                 return
