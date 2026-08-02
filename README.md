@@ -35,9 +35,19 @@ cd keylock
 ```
 
 You get `KeyLock.app` and `KeyLock.dmg` in the same folder. `build.sh` compiles
-`keylock.swift` with `swiftc`, composites `logo.png` into `AppIcon.icns`, writes
+`Sources/*.swift` with `swiftc`, composites `logo.png` into `AppIcon.icns`, writes
 `Info.plist`, ad-hoc signs the bundle, runs the self-test, and wraps it all in a
 disk image.
+
+| File                       | What lives there                                    |
+| -------------------------- | --------------------------------------------------- |
+| `Sources/main.swift`       | Entry point and `--selftest` branch                  |
+| `Sources/Launcher.swift`   | Launcher window: duration form, permission gate      |
+| `Sources/EventTap.swift`   | The lock itself, a `CGEventTap` eating key events    |
+| `Sources/LockScreen.swift` | Black overlays, countdown, hold-to-unlock button     |
+| `Sources/UpdateCheck.swift`| Latest GitHub release vs this build                  |
+| `Sources/AppDelegate.swift`| Wires the above together, kiosk clamp while locked   |
+| `Sources/SelfTest.swift`   | Assertions run on every build                        |
 
 Two variables at the top of [`build.sh`](build.sh) are the ones worth editing:
 
@@ -46,36 +56,35 @@ Two variables at the top of [`build.sh`](build.sh) are the ones worth editing:
 | `VERSION` | Bundle version, compared against the latest release tag           |
 | `REPO`    | `owner/repo` for the update check. Leave empty to turn it off     |
 
-## Accessibility permission
-
-Blocking the keyboard requires Accessibility access. Launch KeyLock and it opens
-a setup screen: click **Open System Settings**, flip the KeyLock switch under
-Privacy & Security › Accessibility, then come back. The lock screen starts on its
-own the moment the permission lands — no relaunch needed.
-
-The grant is tied to that exact copy of the app. After a rebuild, or after moving
-the app somewhere else, flip the switch again.
-
 ## Use it
 
-Open KeyLock. The screen goes dark, the keyboard goes dead, and the remaining
-time is shown on screen.
+Open KeyLock and the launcher appears: set how many minutes to lock for (1–120,
+remembered for next time) and press **Start lock**. The screen goes dark, the
+keyboard goes dead, and the remaining time is shown on screen.
+
+Nothing is locked until you press Start, so the launcher is the last screen where
+your keyboard still works.
 
 **To unlock:** hold the *Hold to unlock* button for 1.5 seconds. A deliberate
 hold, not a click, so a cloth brushing the trackpad cannot let you out. Leave it
 alone and the lock lifts by itself when the timer runs out.
 
-The default is 5 minutes. To change it:
-
-```bash
-open -a KeyLock --args --seconds 120
-```
-
 While locked, the Dock, the menu bar, and app switching are all disabled
-(`NSApplicationPresentationOptions`), so do not set `--seconds` absurdly high.
+(`NSApplicationPresentationOptions`), so pick a duration you are willing to sit
+through.
 
 **What it cannot block:** the power button, Touch ID, and a hold-to-force-restart.
 Those live below the event tap, in hardware. Keep the cloth away from them.
+
+### Accessibility permission
+
+Blocking the keyboard requires Accessibility access. Until it is granted, the
+launcher disables Start and shows an **Open System Settings** button. Flip the
+KeyLock switch under Privacy & Security › Accessibility and come back — Start
+lights up on its own, no relaunch needed.
+
+The grant is tied to that exact copy of the app. After a rebuild, or after moving
+the app somewhere else, flip the switch again.
 
 ## Update check
 
