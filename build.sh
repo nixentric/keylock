@@ -3,7 +3,7 @@
 # attaches to KeyLock itself instead of whatever terminal launched it.
 set -e
 cd "$(dirname "$0")"
-VERSION=1.1.0          # bump this, then tag the GitHub release v$VERSION
+VERSION=1.1.1          # bump this, then tag the GitHub release v$VERSION
 REPO="nixentric/keylock" # "owner/keylock" — leave empty to switch the update check off
 APP=KeyLock.app
 rm -rf "$APP" build
@@ -56,6 +56,11 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 PLIST
 codesign --force --sign - "$APP"
 touch "$APP"  # nudge Finder/Dock off the cached icon
+
+# An ad-hoc signature has no stable identity, so every rebuild is a different app to TCC.
+# Without this the old grant lingers in the list, switched on but no longer applying —
+# which looks exactly like a broken app. Drop it so the switch tells the truth.
+tccutil reset Accessibility local.keylock >/dev/null 2>&1 || true
 "$APP/Contents/MacOS/KeyLock" --selftest
 
 # Installer: drag-to-Applications disk image.

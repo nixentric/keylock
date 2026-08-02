@@ -190,6 +190,16 @@ final class Launcher: NSObject, NSWindowDelegate {
             [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)
         NSWorkspace.shared.open(URL(string:
             "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+
+        // A switched-on but stale entry is the confusing case: the permission belongs to an
+        // older copy of the app, so it reads as granted and does nothing. Say so out loud.
+        Timer.scheduledTimer(withTimeInterval: 15, repeats: false) { [weak self] _ in
+            guard let self, !AXIsProcessTrusted() else { return }
+            self.permissionNote.stringValue += "\n\nAlready switched on? A rebuilt or moved "
+                + "copy counts as a different app to macOS. Remove KeyLock from the list with −, "
+                + "then add it again."
+            self.resizeToFit()
+        }
     }
 }
 
