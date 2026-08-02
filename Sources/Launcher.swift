@@ -107,6 +107,15 @@ final class Launcher: NSObject, NSWindowDelegate {
         window = nil
     }
 
+    /// The system's "would like to control this computer" panel stays on screen after the switch
+    /// is flipped — it belongs to a helper process, not to us, so nothing dismisses it. Ask that
+    /// helper to quit once the grant lands; macOS relaunches it the next time it is needed.
+    private func dismissSystemPrompt() {
+        NSRunningApplication
+            .runningApplications(withBundleIdentifier: "com.apple.accessibility.universalAccessAuthWarn")
+            .forEach { $0.terminate() }
+    }
+
     private func refreshPermission() {
         let trusted = AXIsProcessTrusted()
         guard trusted != lastTrusted else { return }  // don't resize the window every tick
@@ -120,7 +129,12 @@ final class Launcher: NSObject, NSWindowDelegate {
             Start lights up on its own.
             """
         resizeToFit()
-        if trusted { poll?.invalidate() }
+        if trusted {
+            poll?.invalidate()
+            dismissSystemPrompt()
+            window?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
     /// Size the window from its content, with the width pinned first — reading `fittingSize`
