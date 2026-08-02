@@ -54,13 +54,21 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>LSMinimumSystemVersion</key><string>13.0</string>
 </dict></plist>
 PLIST
-codesign --force --sign - "$APP"
+# TCC ties the Accessibility grant to the signature. A stable signing identity keeps the
+# permission across rebuilds; an ad-hoc one is a different app every time, so the old grant
+# lingers switched on while no longer applying — which looks exactly like a broken app.
+# See README "Keeping the permission across rebuilds" to create the identity.
+IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null |
+    sed -n 's/.*"\(KeyLock Local\)".*/\1/p' | head -1)
+if [ -n "$IDENTITY" ]; then
+  codesign --force --sign "$IDENTITY" "$APP"
+  echo "signed with '$IDENTITY' — Accessibility grant survives this rebuild"
+else
+  codesign --force --sign - "$APP"
+  tccutil reset Accessibility local.keylock >/dev/null 2>&1 || true
+  echo "ad-hoc signed — grant Accessibility again after this build"
+fi
 touch "$APP"  # nudge Finder/Dock off the cached icon
-
-# An ad-hoc signature has no stable identity, so every rebuild is a different app to TCC.
-# Without this the old grant lingers in the list, switched on but no longer applying —
-# which looks exactly like a broken app. Drop it so the switch tells the truth.
-tccutil reset Accessibility local.keylock >/dev/null 2>&1 || true
 "$APP/Contents/MacOS/KeyLock" --selftest
 
 # Installer: drag-to-Applications disk image.

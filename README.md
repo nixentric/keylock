@@ -91,6 +91,21 @@ lights up on its own, no relaunch needed.
 The grant is tied to that exact copy of the app. After a rebuild, or after moving
 the app somewhere else, flip the switch again.
 
+### Keeping the permission across rebuilds
+
+macOS ties the grant to the code signature, and an ad-hoc signature is a different
+identity every single build — so every `./build.sh` costs you the permission. Sign
+with a stable local certificate instead and the grant sticks. Create it once:
+
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -keyout /tmp/kl.key -out /tmp/kl.crt -subj "/CN=KeyLock Local" -addext "extendedKeyUsage=codeSigning" && openssl pkcs12 -export -inkey /tmp/kl.key -in /tmp/kl.crt -out /tmp/kl.p12 -passout pass: && security import /tmp/kl.p12 -k ~/Library/Keychains/login.keychain-db -P "" -A -T /usr/bin/codesign && rm /tmp/kl.key /tmp/kl.crt /tmp/kl.p12
+```
+
+macOS will ask for your login password — it is writing a certificate into your
+keychain. `build.sh` picks the identity up automatically from then on (it looks for
+one named `KeyLock Local`) and stops resetting the permission on each build. Grant
+Accessibility once more after the first signed build, and that grant survives.
+
 ## Update check
 
 On launch KeyLock asks GitHub for the latest release
